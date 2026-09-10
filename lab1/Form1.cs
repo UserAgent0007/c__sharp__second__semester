@@ -41,11 +41,11 @@ namespace lab1
             string sql = """
                 SELECT
                     e.LastName + ' ' + e.FirstName + ' ' + e.MiddleName AS Employee,
-                    p.PositionName,
+                    p.Name as PositionName,
                     p.Salary,
                     e.Address,
                     e.Characteristic,
-                    pr.ProjectName,
+                    pr.Name,
                     pr.Description AS ProjectDescription,
                     ep.StartDate,
                     ep.EndDate,
