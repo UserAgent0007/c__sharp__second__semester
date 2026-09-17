@@ -30,7 +30,10 @@
         {
             dataGridView1 = new DataGridView();
             button1 = new Button();
+            dataGridView2 = new DataGridView();
+            button2 = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridView2).BeginInit();
             SuspendLayout();
             // 
             // dataGridView1
@@ -39,12 +42,12 @@
             dataGridView1.Location = new Point(28, 23);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.RowHeadersWidth = 51;
-            dataGridView1.Size = new Size(1154, 474);
+            dataGridView1.Size = new Size(591, 425);
             dataGridView1.TabIndex = 0;
             // 
             // button1
             // 
-            button1.Location = new Point(475, 503);
+            button1.Location = new Point(28, 486);
             button1.Name = "button1";
             button1.Size = new Size(207, 29);
             button1.TabIndex = 1;
@@ -52,16 +55,38 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
+            // dataGridView2
+            // 
+            dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView2.Location = new Point(641, 23);
+            dataGridView2.Name = "dataGridView2";
+            dataGridView2.RowHeadersWidth = 51;
+            dataGridView2.Size = new Size(719, 425);
+            dataGridView2.TabIndex = 2;
+            // 
+            // button2
+            // 
+            button2.Location = new Point(641, 486);
+            button2.Name = "button2";
+            button2.Size = new Size(235, 29);
+            button2.TabIndex = 3;
+            button2.Text = "project intersection";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1194, 572);
+            ClientSize = new Size(1381, 645);
+            Controls.Add(button2);
+            Controls.Add(dataGridView2);
             Controls.Add(button1);
             Controls.Add(dataGridView1);
             Name = "Form1";
             Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridView2).EndInit();
             ResumeLayout(false);
         }
 
@@ -69,5 +94,7 @@
 
         private DataGridView dataGridView1;
         private Button button1;
+        private DataGridView dataGridView2;
+        private Button button2;
     }
 }
