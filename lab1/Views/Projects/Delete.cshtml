@@ -1,0 +1,22 @@
+@model lab1.Models.Project
+
+@{
+    ViewData["Title"] = "Delete Project";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="alert alert-danger">
+    <p>Are you sure you want to delete the project <strong>@Model.Name</strong>?</p>
+    @if (Model.EmployeeProjects.Any())
+    {
+        <p class="text-warning">This project has @Model.EmployeeProjects.Count assigned employee(s). Deleting it will remove all assignments.</p>
+    }
+</div>
+
+<form asp-controller="Projects" asp-action="Delete" method="post" class="form-inline">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-controller="Projects" asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

@@ -1,0 +1,22 @@
+@model lab1.Models.Position
+
+@{
+    ViewData["Title"] = "Delete Position";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="alert alert-danger">
+    <p>Are you sure you want to delete the position <strong>@Model.Name</strong>?</p>
+    @if (Model.Employees.Any())
+    {
+        <p class="text-warning">This position has @Model.Employees.Count employee(s). Please reassign them before deleting.</p>
+    }
+</div>
+
+<form asp-controller="Positions" asp-action="Delete" method="post" class="form-inline">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+    <button type="submit" class="btn btn-danger" @(Model.Employees.Any() ? "disabled" : "")>Delete</button>
+    <a asp-controller="Positions" asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

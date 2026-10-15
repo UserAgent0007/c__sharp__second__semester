@@ -1,0 +1,19 @@
+@model lab1.Models.EmployeeProject
+
+@{
+    ViewData["Title"] = "Remove Project Assignment";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="alert alert-danger">
+    <p>Are you sure you want to remove <strong>@Model.Employee?.FirstName @Model.Employee?.LastName</strong> from the project <strong>@Model.Project?.Name</strong>?</p>
+    <p class="text-muted">Duration: @Model.StartDate.ToString("dd/MM/yyyy") to @Model.EndDate.ToString("dd/MM/yyyy")</p>
+</div>
+
+<form asp-controller="EmployeeProjects" asp-action="Delete" method="post" class="form-inline">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.EmployeeProjectId" />
+    <button type="submit" class="btn btn-danger">Remove</button>
+    <a asp-controller="Employees" asp-action="Details" asp-route-id="@Model.EmployeeId" class="btn btn-secondary">Cancel</a>
+</form>

@@ -1,0 +1,57 @@
+@model lab1.Models.Project
+
+@{
+    ViewData["Title"] = "Project Details";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Name:</strong> @Model.Name</p>
+        <p><strong>Description:</strong> @Model.Description</p>
+
+        @if (Model.EmployeeProjects.Any())
+        {
+            <h4 class="mt-4">Assigned Employees</h4>
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Position</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Duration (days)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ep in Model.EmployeeProjects)
+                    {
+                        var duration = (ep.EndDate.ToDateTime(TimeOnly.MinValue) - ep.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
+                        <tr>
+                            <td>@ep.Employee?.FirstName @ep.Employee?.LastName</td>
+                            <td>@ep.Employee?.Position?.Name</td>
+                            <td>@ep.StartDate.ToString("dd/MM/yyyy")</td>
+                            <td>@ep.EndDate.ToString("dd/MM/yyyy")</td>
+                            <td>@duration days</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted mt-3">No employees assigned yet.</p>
+        }
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-controller="Projects" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <form asp-controller="Projects" asp-action="Delete" method="post" style="display:inline;">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+    <a asp-controller="Projects" asp-action="Index" class="btn btn-secondary">Back</a>
+</div>
