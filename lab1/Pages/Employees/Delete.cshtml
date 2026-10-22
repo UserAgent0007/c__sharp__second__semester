@@ -1,0 +1,19 @@
+@page "{id:int}"
+@model lab1.Pages.Employees.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete Employee";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="alert alert-danger">
+    <p>Are you sure you want to delete <strong>@Model.Employee.FirstName @Model.Employee.LastName</strong>?</p>
+</div>
+
+<form method="post" class="form-inline">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+</form>

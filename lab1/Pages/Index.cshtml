@@ -1,0 +1,39 @@
+@page
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="p-5 mb-4 bg-light rounded-3">
+    <h1 class="display-4">Welcome to Project Contracts</h1>
+    <p class="lead">Manage your employees, projects and positions efficiently.</p>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Employees</h5>
+                <p class="card-text">Manage employee information and their project assignments.</p>
+                <a class="btn btn-primary" asp-page="/Employees/Index" role="button">View Employees</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Projects</h5>
+                <p class="card-text">Create and manage projects, view assigned employees.</p>
+                <a class="btn btn-primary" asp-page="/Projects/Index" role="button">View Projects</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Positions</h5>
+                <p class="card-text">Manage positions and their salary information.</p>
+                <a class="btn btn-primary" asp-page="/Positions/Index" role="button">View Positions</a>
+            </div>
+        </div>
+    </div>
+</div>

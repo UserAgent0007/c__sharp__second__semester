@@ -1,10 +1,13 @@
+using lab1.Api.Dtos;
 using lab1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace lab1.Controllers;
+namespace lab1.Api.Controllers;
 
-public class EmployeesController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class EmployeesController : ControllerBase
 {
     private readonly ProjectContractsContext _context;
 
@@ -13,23 +16,24 @@ public class EmployeesController : Controller
         _context = context;
     }
 
-    // GET: Employees
-    public async Task<IActionResult> Index()
+    // GET api/employees
+    [HttpGet]
+    public async Task<ActionResult<List<Employee>>> GetAll()
     {
-        var employees = await _context.Employees
+        var data = await _context.Employees
+            .AsNoTracking()
             .Include(e => e.Position)
             .Include(e => e.EmployeeProjects)
             .ToListAsync();
-        return View(employees);
+        return data;
     }
 
-    // GET: Employees/Details/5
-    public async Task<IActionResult> Details(int? id)
+    // GET api/employees/5
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Employee>> GetById(int id)
     {
-        if (id == null)
-            return NotFound();
-
         var employee = await _context.Employees
+            .AsNoTracking()
             .Include(e => e.Position)
             .Include(e => e.EmployeeProjects)
             .ThenInclude(ep => ep.Project)
@@ -38,104 +42,77 @@ public class EmployeesController : Controller
         if (employee == null)
             return NotFound();
 
-        return View(employee);
+        return employee;
     }
 
-    // GET: Employees/Create
-    public async Task<IActionResult> Create()
-    {
-        ViewBag.Positions = await _context.Positions.ToListAsync();
-        return View();
-    }
-
-    // POST: Employees/Create
+    // POST api/employees
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("FirstName,LastName,MiddleName,PositionId,Address,Characteristic")] Employee employee)
+    public async Task<ActionResult<Employee>> Create(EmployeeRequest request)
     {
-        if (ModelState.IsValid)
+        if (!await _context.Positions.AnyAsync(p => p.Id == request.PositionId))
         {
-            _context.Add(employee);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            ModelState.AddModelError(nameof(request.PositionId), "Position does not exist.");
+            return ValidationProblem(ModelState);
         }
 
-        ViewBag.Positions = await _context.Positions.ToListAsync();
-        return View(employee);
+        var employee = new Employee
+        {
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            MiddleName = request.MiddleName,
+            PositionId = request.PositionId,
+            Address = request.Address,
+            Characteristic = request.Characteristic
+        };
+
+        _context.Employees.Add(employee);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
     }
 
-    // GET: Employees/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    // PUT api/employees/5
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, EmployeeRequest request)
     {
-        if (id == null)
-            return NotFound();
-
         var employee = await _context.Employees.FindAsync(id);
         if (employee == null)
             return NotFound();
 
-        ViewBag.Positions = await _context.Positions.ToListAsync();
-        return View(employee);
-    }
-
-    // POST: Employees/Edit/5
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,MiddleName,PositionId,Address,Characteristic")] Employee employee)
-    {
-        if (id != employee.Id)
-            return NotFound();
-
-        if (ModelState.IsValid)
+        if (!await _context.Positions.AnyAsync(p => p.Id == request.PositionId))
         {
-            try
-            {
-                _context.Update(employee);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeExists(employee.Id))
-                    return NotFound();
-                throw;
-            }
-            return RedirectToAction(nameof(Index));
+            ModelState.AddModelError(nameof(request.PositionId), "Position does not exist.");
+            return ValidationProblem(ModelState);
         }
 
-        ViewBag.Positions = await _context.Positions.ToListAsync();
-        return View(employee);
+        employee.FirstName = request.FirstName;
+        employee.LastName = request.LastName;
+        employee.MiddleName = request.MiddleName;
+        employee.PositionId = request.PositionId;
+        employee.Address = request.Address;
+        employee.Characteristic = request.Characteristic;
+
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
-    // GET: Employees/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    // DELETE api/employees/5
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
     {
-        if (id == null)
-            return NotFound();
-
         var employee = await _context.Employees
-            .Include(e => e.Position)
+            .Include(e => e.EmployeeProjects)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
             return NotFound();
 
-        return View(employee);
+        // Зв'язки налаштовані як ClientSetNull, тож призначення на проєкти
+        // потрібно видалити явно, інакше база відхилить видалення через FK.
+        _context.EmployeeProjects.RemoveRange(employee.EmployeeProjects);
+        _context.Employees.Remove(employee);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
-
-    // POST: Employees/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        var employee = await _context.Employees.FindAsync(id);
-        if (employee != null)
-        {
-            _context.Employees.Remove(employee);
-            await _context.SaveChangesAsync();
-        }
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    private bool EmployeeExists(int id) => _context.Employees.Any(e => e.Id == id);
 }

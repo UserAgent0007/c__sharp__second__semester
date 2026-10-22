@@ -1,10 +1,13 @@
+using lab1.Api.Dtos;
 using lab1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace lab1.Controllers;
+namespace lab1.Api.Controllers;
 
-public class EmployeeProjectsController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class EmployeeProjectsController : ControllerBase
 {
     private readonly ProjectContractsContext _context;
 
@@ -13,163 +16,110 @@ public class EmployeeProjectsController : Controller
         _context = context;
     }
 
-    // GET: EmployeeProjects/Assign/5 (Employee ID)
-    public async Task<IActionResult> Assign(int? employeeId)
+    // GET api/employeeprojects/5 (EmployeeProjectId)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<EmployeeProject>> GetById(int id)
     {
-        if (employeeId == null)
-            return NotFound();
-
-        var employee = await _context.Employees.FindAsync(employeeId);
-        if (employee == null)
-            return NotFound();
-
-        var assignedProjects = await _context.EmployeeProjects
-            .Where(ep => ep.EmployeeId == employeeId)
-            .Select(ep => ep.ProjectId)
-            .ToListAsync();
-
-        var availableProjects = await _context.Projects
-            .Where(p => !assignedProjects.Contains(p.Id))
-            .ToListAsync();
-
-        ViewBag.EmployeeId = employeeId;
-        ViewBag.EmployeeName = $"{employee.FirstName} {employee.LastName}";
-        ViewBag.Projects = availableProjects;
-
-        return View();
-    }
-
-    // POST: EmployeeProjects/Assign
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Assign(int employeeId, int projectId, DateOnly startDate, DateOnly endDate)
-    {
-        if (employeeId <= 0 || projectId <= 0)
-            return BadRequest("Invalid employee or project ID");
-
-        if (startDate > endDate)
-            ModelState.AddModelError("", "Start date must be before end date");
-
-        if (ModelState.IsValid)
-        {
-            var employeeProject = new EmployeeProject
-            {
-                EmployeeId = employeeId,
-                ProjectId = projectId,
-                StartDate = startDate,
-                EndDate = endDate
-            };
-
-            _context.Add(employeeProject);
-            try
-            {
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Details", "Employees", new { id = employeeId });
-            }
-            catch (DbUpdateException)
-            {
-                ModelState.AddModelError("", "This employee is already assigned to this project");
-            }
-        }
-
-        var employee = await _context.Employees.FindAsync(employeeId);
-        var assignedProjects = await _context.EmployeeProjects
-            .Where(ep => ep.EmployeeId == employeeId)
-            .Select(ep => ep.ProjectId)
-            .ToListAsync();
-
-        var availableProjects = await _context.Projects
-            .Where(p => !assignedProjects.Contains(p.Id))
-            .ToListAsync();
-
-        ViewBag.EmployeeId = employeeId;
-        ViewBag.EmployeeName = $"{employee.FirstName} {employee.LastName}";
-        ViewBag.Projects = availableProjects;
-
-        return View();
-    }
-
-    // GET: EmployeeProjects/Edit/5 (EmployeeProject ID)
-    public async Task<IActionResult> Edit(int? id)
-    {
-        if (id == null)
-            return NotFound();
-
-        var employeeProject = await _context.EmployeeProjects
+        var assignment = await _context.EmployeeProjects
+            .AsNoTracking()
             .Include(ep => ep.Employee)
             .Include(ep => ep.Project)
             .FirstOrDefaultAsync(ep => ep.EmployeeProjectId == id);
 
-        if (employeeProject == null)
+        if (assignment == null)
             return NotFound();
 
-        return View(employeeProject);
+        return assignment;
     }
 
-    // POST: EmployeeProjects/Edit/5
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("EmployeeProjectId,EmployeeId,ProjectId,StartDate,EndDate")] EmployeeProject employeeProject)
+    // GET api/employeeprojects/available/5 (EmployeeId)
+    // Проєкти, на які цей працівник ще не призначений
+    [HttpGet("available/{employeeId:int}")]
+    public async Task<ActionResult<List<Project>>> GetAvailable(int employeeId)
     {
-        if (id != employeeProject.EmployeeProjectId)
+        if (!await _context.Employees.AnyAsync(e => e.Id == employeeId))
             return NotFound();
 
-        if (employeeProject.StartDate > employeeProject.EndDate)
-            ModelState.AddModelError("", "Start date must be before end date");
+        var assignedProjectIds = _context.EmployeeProjects
+            .Where(ep => ep.EmployeeId == employeeId)
+            .Select(ep => ep.ProjectId);
 
-        if (ModelState.IsValid)
+        return await _context.Projects
+            .AsNoTracking()
+            .Where(p => !assignedProjectIds.Contains(p.Id))
+            .ToListAsync();
+    }
+
+    // POST api/employeeprojects/assign
+    [HttpPost("assign")]
+    public async Task<ActionResult<EmployeeProject>> Assign(AssignRequest request)
+    {
+        if (request.StartDate > request.EndDate)
         {
-            try
-            {
-                _context.Update(employeeProject);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Details", "Employees", new { id = employeeProject.EmployeeId });
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeProjectExists(employeeProject.EmployeeProjectId))
-                    return NotFound();
-                throw;
-            }
+            ModelState.AddModelError(nameof(request.EndDate), "Start date must be before end date.");
+            return ValidationProblem(ModelState);
         }
 
-        return View(employeeProject);
-    }
-
-    // GET: EmployeeProjects/Delete/5
-    public async Task<IActionResult> Delete(int? id)
-    {
-        if (id == null)
-            return NotFound();
-
-        var employeeProject = await _context.EmployeeProjects
-            .Include(ep => ep.Employee)
-            .Include(ep => ep.Project)
-            .FirstOrDefaultAsync(ep => ep.EmployeeProjectId == id);
-
-        if (employeeProject == null)
-            return NotFound();
-
-        return View(employeeProject);
-    }
-
-    // POST: EmployeeProjects/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        var employeeProject = await _context.EmployeeProjects.FindAsync(id);
-        int? employeeId = employeeProject?.EmployeeId;
-
-        if (employeeProject != null)
+        if (!await _context.Employees.AnyAsync(e => e.Id == request.EmployeeId) ||
+            !await _context.Projects.AnyAsync(p => p.Id == request.ProjectId))
         {
-            _context.EmployeeProjects.Remove(employeeProject);
-            await _context.SaveChangesAsync();
+            return NotFound(new { message = "Employee or project not found." });
         }
 
-        return RedirectToAction("Details", "Employees", new { id = employeeId });
+        // В базі є унікальний індекс (EmployeeId, ProjectId)
+        if (await _context.EmployeeProjects.AnyAsync(ep =>
+                ep.EmployeeId == request.EmployeeId && ep.ProjectId == request.ProjectId))
+        {
+            return Conflict(new { message = "This employee is already assigned to this project." });
+        }
+
+        var assignment = new EmployeeProject
+        {
+            EmployeeId = request.EmployeeId,
+            ProjectId = request.ProjectId,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate
+        };
+
+        _context.EmployeeProjects.Add(assignment);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = assignment.EmployeeProjectId }, assignment);
     }
 
-    private bool EmployeeProjectExists(int id) => 
-        _context.EmployeeProjects.Any(e => e.EmployeeProjectId == id);
+    // PUT api/employeeprojects/5
+    // Змінюються лише дати, працівник і проєкт залишаються тими самими
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, UpdateAssignmentRequest request)
+    {
+        if (request.StartDate > request.EndDate)
+        {
+            ModelState.AddModelError(nameof(request.EndDate), "Start date must be before end date.");
+            return ValidationProblem(ModelState); // ProblemDetails with 400 Bad Request
+        }
+
+        var assignment = await _context.EmployeeProjects.FindAsync(id);
+        if (assignment == null)
+            return NotFound();
+
+        assignment.StartDate = request.StartDate;
+        assignment.EndDate = request.EndDate;
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // DELETE api/employeeprojects/5
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var assignment = await _context.EmployeeProjects.FindAsync(id);
+        if (assignment == null)
+            return NotFound();
+
+        _context.EmployeeProjects.Remove(assignment);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

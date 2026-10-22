@@ -1,0 +1,26 @@
+@page "{id:int}"
+@model lab1.Pages.EmployeeProjects.DeleteModel
+
+@{
+    ViewData["Title"] = "Remove Project Assignment";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="alert alert-danger">
+    <p>
+        Are you sure you want to remove
+        <strong>@Model.Assignment.Employee?.FirstName @Model.Assignment.Employee?.LastName</strong>
+        from the project <strong>@Model.Assignment.Project?.Name</strong>?
+    </p>
+    <p class="text-muted">
+        Duration: @Model.Assignment.StartDate.ToString("dd/MM/yyyy") to @Model.Assignment.EndDate.ToString("dd/MM/yyyy")
+    </p>
+</div>
+
+<form method="post" class="form-inline">
+    <button type="submit" class="btn btn-danger">Remove</button>
+    <a asp-page="/Employees/Details" asp-route-id="@Model.Assignment.EmployeeId" class="btn btn-secondary">Cancel</a>
+</form>

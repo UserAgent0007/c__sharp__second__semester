@@ -1,10 +1,13 @@
+using lab1.Api.Dtos;
 using lab1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace lab1.Controllers;
+namespace lab1.Api.Controllers;
 
-public class PositionsController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class PositionsController : ControllerBase
 {
     private readonly ProjectContractsContext _context;
 
@@ -13,21 +16,62 @@ public class PositionsController : Controller
         _context = context;
     }
 
-    // GET: Positions
-    public async Task<IActionResult> Index()
+    // GET api/positions
+    [HttpGet]
+    public async Task<ActionResult<List<Position>>> GetAll()
     {
-        var positions = await _context.Positions
+        return await _context.Positions
+            .AsNoTracking()
             .Include(p => p.Employees)
             .ToListAsync();
-        return View(positions);
     }
 
-    // GET: Positions/Details/5
-    public async Task<IActionResult> Details(int? id)
+    // GET api/positions/5
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Position>> GetById(int id)
     {
-        if (id == null)
+        var position = await _context.Positions
+            .AsNoTracking()
+            .Include(p => p.Employees)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (position == null)
             return NotFound();
 
+        return position;
+    }
+
+    // POST api/positions
+    [HttpPost]
+    public async Task<ActionResult<Position>> Create(PositionRequest request)
+    {
+        var position = new Position { Name = request.Name, Salary = request.Salary };
+
+        _context.Positions.Add(position);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = position.Id }, position);
+    }
+
+    // PUT api/positions/5
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, PositionRequest request)
+    {
+        var position = await _context.Positions.FindAsync(id);
+        if (position == null)
+            return NotFound();
+
+        position.Name = request.Name;
+        position.Salary = request.Salary;
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // DELETE api/positions/5
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
         var position = await _context.Positions
             .Include(p => p.Employees)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -35,113 +79,12 @@ public class PositionsController : Controller
         if (position == null)
             return NotFound();
 
-        return View(position);
+        if (position.Employees.Any())
+            return Conflict(new { message = "Неможливо видалити посаду, оскільки до неї прив'язані співробітники." });
+
+        _context.Positions.Remove(position);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
-
-    // GET: Positions/Create
-    public IActionResult Create()
-    {
-        return View();
-    }
-
-    // POST: Positions/Create
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Name,Salary")] Position position)
-    {
-        if (ModelState.IsValid)
-        {
-            _context.Add(position);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        return View(position);
-    }
-
-    // GET: Positions/Edit/5
-    public async Task<IActionResult> Edit(int? id)
-    {
-        if (id == null)
-            return NotFound();
-
-        var position = await _context.Positions.FindAsync(id);
-        if (position == null)
-            return NotFound();
-
-        return View(position);
-    }
-
-    // POST: Positions/Edit/5
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Salary")] Position position)
-    {
-        if (id != position.Id)
-            return NotFound();
-
-        if (ModelState.IsValid)
-        {
-            try
-            {
-                _context.Update(position);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PositionExists(position.Id))
-                    return NotFound();
-                throw;
-            }
-            return RedirectToAction(nameof(Index));
-        }
-
-        return View(position);
-    }
-
-    // GET: Positions/Delete/5
-    public async Task<IActionResult> Delete(int? id)
-    {
-        if (id == null)
-            return NotFound();
-
-        var position = await _context.Positions.FindAsync(id);
-        if (position == null)
-            return NotFound();
-
-        return View(position);
-    }
-
-    // POST: Positions/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        var position = await _context.Positions.FindAsync(id);
-        if (position != null)
-        {
-            try
-            {
-                _context.Positions.Remove(position);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException)
-            {
-                // Помилка виникає, якщо є пов'язані записи (наприклад, співробітники з цією посадою)
-                ModelState.AddModelError("", "Неможливо видалити посаду, оскільки до неї прив'язані співробітники.");
-                return View(position);
-            }
-            catch (Exception ex)
-            {
-                // Обробка будь-яких інших непередбачуваних помилок
-                ModelState.AddModelError("", $"Сталася помилка при видаленні: {ex.Message}");
-                return View(position);
-            }
-        }
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    private bool PositionExists(int id) => _context.Positions.Any(p => p.Id == id);
 }

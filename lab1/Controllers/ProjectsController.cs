@@ -1,10 +1,13 @@
+using lab1.Api.Dtos;
 using lab1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace lab1.Controllers;
+namespace lab1.Api.Controllers;
 
-public class ProjectsController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class ProjectsController : ControllerBase
 {
     private readonly ProjectContractsContext _context;
 
@@ -13,22 +16,22 @@ public class ProjectsController : Controller
         _context = context;
     }
 
-    // GET: Projects
-    public async Task<IActionResult> Index()
+    // GET api/projects
+    [HttpGet]
+    public async Task<ActionResult<List<Project>>> GetAll()
     {
-        var projects = await _context.Projects
+        return await _context.Projects
+            .AsNoTracking()
             .Include(p => p.EmployeeProjects)
             .ToListAsync();
-        return View(projects);
     }
 
-    // GET: Projects/Details/5
-    public async Task<IActionResult> Details(int? id)
+    // GET api/projects/5
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Project>> GetById(int id)
     {
-        if (id == null)
-            return NotFound();
-
         var project = await _context.Projects
+            .AsNoTracking()
             .Include(p => p.EmployeeProjects)
             .ThenInclude(ep => ep.Employee)
             .ThenInclude(e => e.Position)
@@ -37,97 +40,53 @@ public class ProjectsController : Controller
         if (project == null)
             return NotFound();
 
-        return View(project);
+        return project;
     }
 
-    // GET: Projects/Create
-    public IActionResult Create()
-    {
-        return View();
-    }
-
-    // POST: Projects/Create
+    // POST api/projects
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Name,Description")] Project project)
+    public async Task<ActionResult<Project>> Create(ProjectRequest request)
     {
-        if (ModelState.IsValid)
-        {
-            _context.Add(project);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+        var project = new Project { Name = request.Name, Description = request.Description };
 
-        return View(project);
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = project.Id }, project);
     }
 
-    // GET: Projects/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    // PUT api/projects/5
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, ProjectRequest request)
     {
-        if (id == null)
-            return NotFound();
-
         var project = await _context.Projects.FindAsync(id);
         if (project == null)
             return NotFound();
 
-        return View(project);
+        project.Name = request.Name;
+        project.Description = request.Description;
+
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
-    // POST: Projects/Edit/5
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description")] Project project)
+    // DELETE api/projects/5
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
     {
-        if (id != project.Id)
-            return NotFound();
+        var project = await _context.Projects
+            .Include(p => p.EmployeeProjects)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
-        if (ModelState.IsValid)
-        {
-            try
-            {
-                _context.Update(project);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProjectExists(project.Id))
-                    return NotFound();
-                throw;
-            }
-            return RedirectToAction(nameof(Index));
-        }
-
-        return View(project);
-    }
-
-    // GET: Projects/Delete/5
-    public async Task<IActionResult> Delete(int? id)
-    {
-        if (id == null)
-            return NotFound();
-
-        var project = await _context.Projects.FindAsync(id);
         if (project == null)
             return NotFound();
 
-        return View(project);
+        // Сторінка видалення обіцяє "Deleting it will remove all assignments",
+        // тому призначення видаляємо разом із проєктом.
+        _context.EmployeeProjects.RemoveRange(project.EmployeeProjects);
+        _context.Projects.Remove(project);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
-
-    // POST: Projects/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        var project = await _context.Projects.FindAsync(id);
-        if (project != null)
-        {
-            _context.Projects.Remove(project);
-            await _context.SaveChangesAsync();
-        }
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    private bool ProjectExists(int id) => _context.Projects.Any(p => p.Id == id);
 }

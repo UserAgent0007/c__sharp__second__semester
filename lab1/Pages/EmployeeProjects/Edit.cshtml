@@ -1,0 +1,58 @@
+@page "{id:int}"
+@using lab1.Models
+@model lab1.Pages.EmployeeProjects.EditModel
+
+@{
+    ViewData["Title"] = "Edit Project Assignment";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p class="lead">Employee: <strong>@Model.EmployeeName</strong></p>
+<p>Project: <strong>@Model.ProjectName</strong></p>
+
+<form method="post" class="form">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group mb-3">
+        <label for="startDate" class="form-label">Start Date</label>
+        <input id="startDate" asp-for="Input.StartDate" type="date" class="form-control" required />
+        <span asp-validation-for="Input.StartDate" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label for="endDate" class="form-label">End Date</label>
+        <input id="endDate" asp-for="Input.EndDate" type="date" class="form-control" required />
+        <span asp-validation-for="Input.EndDate" class="text-danger"></span>
+    </div>
+
+    <div class="alert alert-info mt-3" id="durationInfo"></div>
+
+    <div class="form-group mt-3">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a asp-page="/Employees/Details" asp-route-id="@Model.EmployeeId" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        function updateDuration() {
+            var startDate = new Date(document.getElementById('startDate').value);
+            var endDate = new Date(document.getElementById('endDate').value);
+            var info = document.getElementById('durationInfo');
+
+            if (isNaN(startDate) || isNaN(endDate) || endDate < startDate) {
+                info.textContent = '';
+                return;
+            }
+
+            var duration = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            info.innerHTML = '<strong>Duration:</strong> ' + duration + ' days';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('startDate').addEventListener('change', updateDuration);
+            document.getElementById('endDate').addEventListener('change', updateDuration);
+            updateDuration();
+        });
+    </script>
+}
