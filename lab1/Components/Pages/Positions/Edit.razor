@@ -1,0 +1,70 @@
+@page "/positions/edit/{Id:int}"
+@inject PositionService Service
+@inject NavigationManager Nav
+
+<PageTitle>Edit Position</PageTitle>
+
+<h1>Edit Position</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (input == null)
+{
+    <div class="alert alert-warning">Посаду не знайдено.</div>
+    <a href="/positions" class="btn btn-secondary">Back</a>
+}
+else
+{
+    <EditForm Model="input" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+        @if (error != null)
+        {
+            <div class="text-danger mb-3">@error</div>
+        }
+
+        <div class="form-group mb-3">
+            <label class="form-label">Name</label>
+            <InputText class="form-control" @bind-Value="input.Name" />
+            <ValidationMessage For="() => input.Name" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Salary</label>
+            <InputNumber class="form-control" @bind-Value="input.Salary" />
+            <ValidationMessage For="() => input.Salary" class="text-danger" />
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a href="/positions" class="btn btn-secondary">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PositionInput? input;
+    private string? error;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        var position = await Service.GetByIdAsync(Id);
+        input = position == null ? null : new PositionInput { Name = position.Name, Salary = position.Salary };
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        error = await Service.UpdateAsync(Id, input!);
+        if (error == null)
+        {
+            Nav.NavigateTo($"/positions/{Id}");
+        }
+    }
+}

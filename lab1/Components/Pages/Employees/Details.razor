@@ -1,0 +1,90 @@
+@page "/employees/{Id:int}"
+@inject EmployeeService Service
+
+<PageTitle>Employee Details</PageTitle>
+
+<h1>Employee Details</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (employee == null)
+{
+    <div class="alert alert-warning">Працівника не знайдено.</div>
+    <a href="/employees" class="btn btn-secondary">Back</a>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <p><strong>First Name:</strong> @employee.FirstName</p>
+            <p><strong>Last Name:</strong> @employee.LastName</p>
+            <p><strong>Middle Name:</strong> @employee.MiddleName</p>
+            <p><strong>Position:</strong> @employee.Position?.Name</p>
+            <p><strong>Address:</strong> @employee.Address</p>
+            <p><strong>Characteristic:</strong> @employee.Characteristic</p>
+
+            <h4 class="mt-4">Projects</h4>
+            @if (employee.EmployeeProjects.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Duration (days)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ep in employee.EmployeeProjects)
+                            {
+                                var duration = ep.EndDate.DayNumber - ep.StartDate.DayNumber + 1;
+                                <tr>
+                                    <td><strong>@ep.Project?.Name</strong></td>
+                                    <td>@ep.StartDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@ep.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@duration days</td>
+                                    <td>
+                                        <a href="/employeeprojects/edit/@ep.EmployeeProjectId" class="btn btn-sm btn-warning">Edit</a>
+                                        <a href="/employeeprojects/delete/@ep.EmployeeProjectId" class="btn btn-sm btn-danger">Delete</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No projects assigned yet.</p>
+            }
+            <div class="mt-2">
+                <a href="/employeeprojects/assign/@employee.Id" class="btn btn-sm btn-success">Assign Project</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="/employees/edit/@employee.Id" class="btn btn-warning">Edit</a>
+        <a href="/employees/delete/@employee.Id" class="btn btn-danger">Delete</a>
+        <a href="/employees" class="btn btn-secondary">Back</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Employee? employee;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        employee = await Service.GetByIdAsync(Id);
+        loading = false;
+    }
+}

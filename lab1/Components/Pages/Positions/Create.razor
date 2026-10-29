@@ -1,0 +1,39 @@
+@page "/positions/create"
+@inject PositionService Service
+@inject NavigationManager Nav
+
+<PageTitle>Create Position</PageTitle>
+
+<h1>Create Position</h1>
+
+<EditForm Model="input" OnValidSubmit="SaveAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="form-group mb-3">
+        <label class="form-label">Name</label>
+        <InputText class="form-control" @bind-Value="input.Name" />
+        <ValidationMessage For="() => input.Name" class="text-danger" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label">Salary</label>
+        <InputNumber class="form-control" @bind-Value="input.Salary" />
+        <ValidationMessage For="() => input.Salary" class="text-danger" />
+    </div>
+
+    <div class="form-group mt-3">
+        <button type="submit" class="btn btn-primary">Create</button>
+        <a href="/positions" class="btn btn-secondary">Back</a>
+    </div>
+</EditForm>
+
+@code {
+    private readonly PositionInput input = new();
+
+    private async Task SaveAsync()
+    {
+        await Service.CreateAsync(input);
+        Nav.NavigateTo("/positions");
+    }
+}

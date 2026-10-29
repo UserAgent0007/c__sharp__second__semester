@@ -1,0 +1,39 @@
+@page "/projects/create"
+@inject ProjectService Service
+@inject NavigationManager Nav
+
+<PageTitle>Create Project</PageTitle>
+
+<h1>Create Project</h1>
+
+<EditForm Model="input" OnValidSubmit="SaveAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="form-group mb-3">
+        <label class="form-label">Name</label>
+        <InputText class="form-control" @bind-Value="input.Name" />
+        <ValidationMessage For="() => input.Name" class="text-danger" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label">Description</label>
+        <InputTextArea class="form-control" @bind-Value="input.Description" />
+        <ValidationMessage For="() => input.Description" class="text-danger" />
+    </div>
+
+    <div class="form-group mt-3">
+        <button type="submit" class="btn btn-primary">Create</button>
+        <a href="/projects" class="btn btn-secondary">Back</a>
+    </div>
+</EditForm>
+
+@code {
+    private readonly ProjectInput input = new();
+
+    private async Task SaveAsync()
+    {
+        await Service.CreateAsync(input);
+        Nav.NavigateTo("/projects");
+    }
+}

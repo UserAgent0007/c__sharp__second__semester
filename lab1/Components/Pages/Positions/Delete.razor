@@ -1,0 +1,60 @@
+@page "/positions/delete/{Id:int}"
+@inject PositionService Service
+@inject NavigationManager Nav
+
+<PageTitle>Delete Position</PageTitle>
+
+<h1>Delete Position</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (position == null)
+{
+    <div class="alert alert-warning">Посаду не знайдено.</div>
+    <a href="/positions" class="btn btn-secondary">Back</a>
+}
+else
+{
+    if (error != null)
+    {
+        <div class="text-danger mb-3">@error</div>
+    }
+
+    <div class="alert alert-danger">
+        <p>Are you sure you want to delete the position <strong>@position.Name</strong>?</p>
+        @if (position.Employees.Any())
+        {
+            <p class="text-warning">This position has @position.Employees.Count employee(s). Please reassign them before deleting.</p>
+        }
+    </div>
+
+    <button type="button" class="btn btn-danger" disabled="@position.Employees.Any()" @onclick="DeleteAsync">Delete</button>
+    <a href="/positions" class="btn btn-secondary">Cancel</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Position? position;
+    private string? error;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        position = await Service.GetByIdAsync(Id);
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        // Сервіс повторно перевіряє наявність працівників
+        error = await Service.DeleteAsync(Id);
+        if (error == null)
+        {
+            Nav.NavigateTo("/positions");
+        }
+    }
+}

@@ -1,0 +1,63 @@
+@page "/employeeprojects/delete/{Id:int}"
+@inject EmployeeProjectService Service
+@inject NavigationManager Nav
+
+<PageTitle>Remove Project Assignment</PageTitle>
+
+<h1>Remove Project Assignment</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (assignment == null)
+{
+    <div class="alert alert-warning">Призначення не знайдено.</div>
+    <a href="/employees" class="btn btn-secondary">Back</a>
+}
+else
+{
+    if (error != null)
+    {
+        <div class="text-danger mb-3">@error</div>
+    }
+
+    <div class="alert alert-danger">
+        <p>
+            Are you sure you want to remove
+            <strong>@assignment.Employee?.FirstName @assignment.Employee?.LastName</strong>
+            from the project <strong>@assignment.Project?.Name</strong>?
+        </p>
+        <p class="text-muted">
+            Duration: @assignment.StartDate.ToString("dd/MM/yyyy") to @assignment.EndDate.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+
+    <button type="button" class="btn btn-danger" @onclick="DeleteAsync">Remove</button>
+    <a href="/employees/@assignment.EmployeeId" class="btn btn-secondary">Cancel</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private EmployeeProject? assignment;
+    private string? error;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        assignment = await Service.GetByIdAsync(Id);
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        var employeeId = assignment!.EmployeeId;
+        error = await Service.DeleteAsync(Id);
+        if (error == null)
+        {
+            Nav.NavigateTo($"/employees/{employeeId}");
+        }
+    }
+}

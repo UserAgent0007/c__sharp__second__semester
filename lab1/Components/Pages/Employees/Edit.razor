@@ -1,0 +1,118 @@
+@page "/employees/edit/{Id:int}"
+@inject EmployeeService Service
+@inject PositionService PositionsService
+@inject NavigationManager Nav
+
+<PageTitle>Edit Employee</PageTitle>
+
+<h1>Edit Employee</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (input == null || positions == null)
+{
+    <div class="alert alert-warning">Працівника не знайдено.</div>
+    <a href="/employees" class="btn btn-secondary">Back</a>
+}
+else
+{
+    <EditForm Model="input" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+        @if (error != null)
+        {
+            <div class="text-danger mb-3">@error</div>
+        }
+
+        <div class="form-group mb-3">
+            <label class="form-label">First name</label>
+            <InputText class="form-control" @bind-Value="input.FirstName" />
+            <ValidationMessage For="() => input.FirstName" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Last name</label>
+            <InputText class="form-control" @bind-Value="input.LastName" />
+            <ValidationMessage For="() => input.LastName" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Middle name</label>
+            <InputText class="form-control" @bind-Value="input.MiddleName" />
+            <ValidationMessage For="() => input.MiddleName" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Position</label>
+            <InputSelect class="form-control" @bind-Value="input.PositionId">
+                <option value="">-- Select Position --</option>
+                @foreach (var p in positions)
+                {
+                    <option value="@p.Id">@p.Name</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => input.PositionId" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Address</label>
+            <InputText class="form-control" @bind-Value="input.Address" />
+            <ValidationMessage For="() => input.Address" class="text-danger" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label class="form-label">Characteristic</label>
+            <InputTextArea class="form-control" @bind-Value="input.Characteristic" />
+            <ValidationMessage For="() => input.Characteristic" class="text-danger" />
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a href="/employees" class="btn btn-secondary">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private EmployeeInput? input;
+    private List<Position>? positions;
+    private string? error;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        var employee = await Service.GetByIdAsync(Id);
+        if (employee != null)
+        {
+            input = new EmployeeInput
+            {
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                MiddleName = employee.MiddleName,
+                PositionId = employee.PositionId,
+                Address = employee.Address,
+                Characteristic = employee.Characteristic
+            };
+            positions = await PositionsService.GetListAsync();
+        }
+        else
+        {
+            input = null;
+        }
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        error = await Service.UpdateAsync(Id, input!);
+        if (error == null)
+        {
+            Nav.NavigateTo($"/employees/{Id}");
+        }
+    }
+}

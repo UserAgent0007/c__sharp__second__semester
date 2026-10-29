@@ -1,0 +1,59 @@
+@page "/projects/delete/{Id:int}"
+@inject ProjectService Service
+@inject NavigationManager Nav
+
+<PageTitle>Delete Project</PageTitle>
+
+<h1>Delete Project</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (project == null)
+{
+    <div class="alert alert-warning">Проєкт не знайдено.</div>
+    <a href="/projects" class="btn btn-secondary">Back</a>
+}
+else
+{
+    if (error != null)
+    {
+        <div class="text-danger mb-3">@error</div>
+    }
+
+    <div class="alert alert-danger">
+        <p>Are you sure you want to delete the project <strong>@project.Name</strong>?</p>
+        @if (project.EmployeeProjects.Any())
+        {
+            <p class="text-warning">This project has @project.EmployeeProjects.Count assigned employee(s). Deleting it will remove all assignments.</p>
+        }
+    </div>
+
+    <button type="button" class="btn btn-danger" @onclick="DeleteAsync">Delete</button>
+    <a href="/projects" class="btn btn-secondary">Cancel</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Project? project;
+    private string? error;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        project = await Service.GetByIdAsync(Id);
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        error = await Service.DeleteAsync(Id);
+        if (error == null)
+        {
+            Nav.NavigateTo("/projects");
+        }
+    }
+}

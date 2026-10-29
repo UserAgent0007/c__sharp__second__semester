@@ -1,0 +1,77 @@
+@page "/positions/{Id:int}"
+@inject PositionService Service
+
+<PageTitle>Position Details</PageTitle>
+
+<h1>Position Details</h1>
+
+@if (loading)
+{
+    <p><em>Завантаження...</em></p>
+}
+else if (position == null)
+{
+    <div class="alert alert-warning">Посаду не знайдено.</div>
+    <a href="/positions" class="btn btn-secondary">Back</a>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Name:</strong> @position.Name</p>
+            <p><strong>Salary:</strong> $@position.Salary.ToString("N2")</p>
+
+            @if (position.Employees.Any())
+            {
+                <h4 class="mt-4">Employees</h4>
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Address</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var employee in position.Employees)
+                        {
+                            <tr>
+                                <td>@employee.FirstName</td>
+                                <td>@employee.LastName</td>
+                                <td>@employee.Address</td>
+                                <td>
+                                    <a href="/employees/@employee.Id" class="btn btn-info btn-sm">Details</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted mt-3">No employees with this position.</p>
+            }
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="/positions/edit/@position.Id" class="btn btn-warning">Edit</a>
+        <a href="/positions/delete/@position.Id" class="btn btn-danger">Delete</a>
+        <a href="/positions" class="btn btn-secondary">Back</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Position? position;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        position = await Service.GetByIdAsync(Id);
+        loading = false;
+    }
+}
